@@ -1,128 +1,222 @@
-// 1. Initialize Map with Free OpenStreetMap (No API Key Required)
-    function initMap() {
-      map = L.map('map', {
-        center: [13.736717, 100.523186],
-        zoom: 6,
-        minZoom: 5,
-        maxZoom: 10
-      });
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สถานการณ์ผู้เสียชีวิตจากอุบัติเหตุทางถนนในประเทศไทย ไตรมาส 1 ปี พ.ศ. 2569</title>
+  
+  <!-- Google Fonts: Sarabun & Prompt -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-      // ใช้ OpenStreetMap มาตรฐาน ใช้งานได้ฟรีตลอดเวลา ไม่ติด API Key
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map);
-
-      addLegend();
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #070d18 0%, #0d1b2a 50%, #102a43 100%);
+      --card-bg: rgba(16, 27, 46, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: rgba(255, 122, 0, 0.4);
+      --text-main: #f0f4f8;
+      --text-muted: #9fb3c8;
+      --primary-orange: #ff7a00;
+      --accent-blue: #00a8ff;
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
     }
 
-    function resetMapView() {
-      if (map) map.setView([13.736717, 100.523186], 6);
+    body.light-mode {
+      --bg-gradient: linear-gradient(135deg, #eef2f7 0%, #dbe4ee 50%, #ccd8e6 100%);
+      --card-bg: rgba(255, 255, 255, 0.88);
+      --card-border: rgba(0, 0, 0, 0.08);
+      --card-hover-border: rgba(230, 81, 0, 0.4);
+      --text-main: #102a43;
+      --text-muted: #486581;
+      --primary-orange: #e65100;
+      --accent-blue: #0077b6;
+      --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
     }
 
-    // 2. Color Scales
-    function getColor(d) {
-      return d > 120 ? '#800026' :
-             d > 80  ? '#BD0026' :
-             d > 50  ? '#E31A1C' :
-             d > 30  ? '#FC4E2A' :
-             d > 15  ? '#FD8D3C' :
-             d > 5   ? '#FEB24C' :
-             d > 0   ? '#FED976' :
-                       '#f0f0f0';
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Sarabun', sans-serif;
+      transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
     }
 
-    function addLegend() {
-      const legend = L.control({ position: 'bottomright' });
-      legend.onAdd = function () {
-        const div = L.DomUtil.create('div', 'legend');
-        const grades = [0, 5, 15, 30, 50, 80, 120];
-        div.innerHTML = '<strong>จำนวนผู้เสียชีวิต (ราย)</strong><br>';
-        for (let i = 0; i < grades.length; i++) {
-          div.innerHTML +=
-            '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
-            grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
-        }
-        return div;
-      };
-      legend.addTo(map);
+    h1, h2, h3, h4, .brand-font {
+      font-family: 'Prompt', sans-serif;
     }
 
-    // 3. Load Thailand 77 Provinces GeoJSON (มีระบบ Fallback สำรองหากเซิร์ฟเวอร์ใดล่ม)
-    async function loadThailandGeoJSON() {
-      const geojsonSources = [
-        'https://raw.githubusercontent.com/chingchai/OpenGISData-Thailand/master/provinces.geojson',
-        'https://raw.githubusercontent.com/apisit/thailand.json/master/thailandWithName.json',
-        'https://raw.githubusercontent.com/cvibhagool/thailand-map/master/thailand-provinces.geojson'
-      ];
-
-      for (const url of geojsonSources) {
-        try {
-          const res = await fetch(url);
-          if (res.ok) {
-            thaiGeoJson = await res.json();
-            console.log('โหลด GeoJSON สำเร็จจาก:', url);
-            renderMapLayers();
-            return;
-          }
-        } catch (e) {
-          console.warn('กำลังลองโหลดจากแหล่งสำรองถัดไป...');
-        }
-      }
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding-bottom: 40px;
     }
 
-    // ดึงชื่อจังหวัดจาก GeoJSON ให้ตรงกับชื่อในไฟล์ CSV ภาษาไทย
-    function getProvinceName(props) {
-      return (props.pro_th || props.name || props.NAME_1 || props.NL_NAME_1 || props.dname || '').replace(/^(จ\.|จังหวัด)/, '').trim();
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: var(--glass-shadow);
+      padding: 20px;
     }
 
-    function renderMapLayers() {
-      if (!thaiGeoJson || !map) return;
-      if (geojsonLayer) map.removeLayer(geojsonLayer);
-
-      // รวบรวมสถิติตามจังหวัดจากข้อมูลจริง
-      const provCounts = {};
-      filteredData.forEach(row => {
-        const p = (row.Dead_Prov || '').replace(/^(จ\.|จังหวัด)/, '').trim();
-        if (p) provCounts[p] = (provCounts[p] || 0) + 1;
-      });
-
-      geojsonLayer = L.geoJson(thaiGeoJson, {
-        style: function(feature) {
-          const name = getProvinceName(feature.properties);
-          const count = provCounts[name] || 0;
-          return {
-            fillColor: getColor(count),
-            weight: 1.2,
-            opacity: 1,
-            color: '#ffffff',
-            dashArray: '2',
-            fillOpacity: 0.75
-          };
-        },
-        onEachFeature: function(feature, layer) {
-          const name = getProvinceName(feature.properties);
-          const count = provCounts[name] || 0;
-          
-          // Tooltip เมื่อชี้เมาส์
-          layer.bindTooltip(`<strong>จังหวัด${name}</strong><br>ผู้เสียชีวิต: ${count.toLocaleString()} ราย`, {
-            sticky: true,
-            className: 'custom-tooltip'
-          });
-
-          // เหตุการณ์คลิกและ Hover
-          layer.on({
-            mouseover: function(e) {
-              const l = e.target;
-              l.setStyle({ weight: 3, color: '#ff7a00', fillOpacity: 0.9 });
-            },
-            mouseout: function(e) {
-              geojsonLayer.resetStyle(e.target);
-            },
-            click: function() {
-              showProvinceDetail(name, count);
-            }
-          });
-        }
-      }).addTo(map);
+    .glass-card:hover {
+      border-color: var(--card-hover-border);
     }
+
+    header {
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(7, 13, 24, 0.4);
+      backdrop-filter: blur(10px);
+    }
+
+    .header-title h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-orange);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-title p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: var(--primary-orange);
+      color: #fff;
+      border-color: var(--primary-orange);
+    }
+
+    .btn-primary {
+      background: var(--primary-orange);
+      color: #ffffff;
+      border-color: var(--primary-orange);
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .alert-banner {
+      background: rgba(255, 122, 0, 0.12);
+      border-left: 4px solid var(--primary-orange);
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-main);
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    .kpi-card {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .kpi-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      background: rgba(255, 122, 0, 0.15);
+      color: var(--primary-orange);
+    }
+
+    .kpi-info h3 {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .kpi-info .number {
+      font-size: 1.8rem;
+      font-weight: 700;
+      font-family: 'Prompt', sans-serif;
+      color: var(--text-main);
+    }
+
+    .timeline-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .timeline-slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .timeline-slider {
+      flex: 1;
+      accent-color: var(--primary-orange);
+      height: 6px;
+      border-radius:
