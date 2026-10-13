@@ -1,524 +1,4 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>สถานการณ์ผู้เสียชีวิตจากอุบัติเหตุทางถนนในประเทศไทย ไตรมาส 1 ปี พ.ศ. 2569</title>
-  
-  <!-- Google Fonts: Sarabun & Prompt -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
-  
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  
-  <!-- Chart.js & PapaParse -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <style>
-    :root {
-      --bg-gradient: linear-gradient(135deg, #070d18 0%, #0d1b2a 50%, #102a43 100%);
-      --card-bg: rgba(16, 27, 46, 0.7);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --card-hover-border: rgba(255, 122, 0, 0.4);
-      --text-main: #f0f4f8;
-      --text-muted: #9fb3c8;
-      --primary-orange: #ff7a00;
-      --accent-blue: #00a8ff;
-      --danger-red: #ff4757;
-      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
-      --timeline-track: rgba(255, 255, 255, 0.1);
-    }
-
-    body.light-mode {
-      --bg-gradient: linear-gradient(135deg, #eef2f7 0%, #dbe4ee 50%, #ccd8e6 100%);
-      --card-bg: rgba(255, 255, 255, 0.85);
-      --card-border: rgba(0, 0, 0, 0.08);
-      --card-hover-border: rgba(230, 81, 0, 0.4);
-      --text-main: #102a43;
-      --text-muted: #486581;
-      --primary-orange: #e65100;
-      --accent-blue: #0077b6;
-      --danger-red: #d32f2f;
-      --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-      --timeline-track: rgba(0, 0, 0, 0.1);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Sarabun', sans-serif;
-      transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-    }
-
-    h1, h2, h3, h4, .brand-font {
-      font-family: 'Prompt', sans-serif;
-    }
-
-    body {
-      background: var(--bg-gradient);
-      color: var(--text-main);
-      min-height: 100vh;
-      overflow-x: hidden;
-      padding-bottom: 40px;
-    }
-
-    /* Glassmorphism Styles */
-    .glass-card {
-      background: var(--card-bg);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      box-shadow: var(--glass-shadow);
-      padding: 20px;
-    }
-
-    .glass-card:hover {
-      border-color: var(--card-hover-border);
-    }
-
-    /* Header & Navigation */
-    header {
-      padding: 20px 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 15px;
-      border-bottom: 1px solid var(--card-border);
-      background: rgba(7, 13, 24, 0.4);
-      backdrop-filter: blur(10px);
-    }
-
-    .header-title h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--primary-orange);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .header-title p {
-      font-size: 0.88rem;
-      color: var(--text-muted);
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .btn {
-      padding: 8px 16px;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      border: 1px solid var(--card-border);
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-main);
-      transition: all 0.2s ease;
-    }
-
-    .btn:hover {
-      background: var(--primary-orange);
-      color: #fff;
-      border-color: var(--primary-orange);
-    }
-
-    .btn-primary {
-      background: var(--primary-orange);
-      color: #ffffff;
-      border-color: var(--primary-orange);
-    }
-
-    /* Main Container */
-    .container {
-      max-width: 1440px;
-      margin: 0 auto;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-
-    /* Data Disclaimer Banner */
-    .alert-banner {
-      background: rgba(255, 122, 0, 0.12);
-      border-left: 4px solid var(--primary-orange);
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: var(--text-main);
-    }
-
-    /* KPI Summary Cards */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 18px;
-    }
-
-    .kpi-card {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-    }
-
-    .kpi-icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      background: rgba(255, 122, 0, 0.15);
-      color: var(--primary-orange);
-    }
-
-    .kpi-info h3 {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-
-    .kpi-info .number {
-      font-size: 1.8rem;
-      font-weight: 700;
-      font-family: 'Prompt', sans-serif;
-      color: var(--text-main);
-    }
-
-    /* Timeline & Playback Control */
-    .timeline-container {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .timeline-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .timeline-slider-wrap {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .timeline-slider {
-      flex: 1;
-      accent-color: var(--primary-orange);
-      height: 6px;
-      border-radius: 3px;
-      cursor: pointer;
-    }
-
-    /* Layout Grid */
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 24px;
-    }
-
-    @media (max-width: 1024px) {
-      .main-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* Map Section */
-    #map {
-      height: 580px;
-      border-radius: 12px;
-      width: 100%;
-      background: rgba(0,0,0,0.2);
-    }
-
-    .map-controls {
-      display: flex;
-      gap: 10px;
-      margin-top: 12px;
-      justify-content: flex-end;
-    }
-
-    /* Map Legend */
-    .legend {
-      background: var(--card-bg);
-      backdrop-filter: blur(10px);
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-      font-size: 0.8rem;
-      line-height: 1.5;
-    }
-
-    .legend i {
-      width: 16px;
-      height: 16px;
-      float: left;
-      margin-right: 8px;
-      opacity: 0.9;
-      border-radius: 3px;
-    }
-
-    /* Province Comparison Tool */
-    .compare-container {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      margin-top: 15px;
-      background: rgba(255, 255, 255, 0.02);
-      padding: 15px;
-      border-radius: 12px;
-      border: 1px dashed var(--card-border);
-    }
-
-    .compare-box select {
-      width: 100%;
-      padding: 8px;
-      border-radius: 8px;
-      background: rgba(0, 0, 0, 0.4);
-      color: var(--text-main);
-      border: 1px solid var(--card-border);
-      outline: none;
-      margin-bottom: 10px;
-    }
-
-    .compare-result {
-      font-size: 0.9rem;
-    }
-
-    /* Charts Grid */
-    .charts-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-
-    @media (max-width: 768px) {
-      .charts-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .chart-box {
-      height: 280px;
-      position: relative;
-    }
-
-    footer {
-      text-align: center;
-      margin-top: 30px;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      border-top: 1px solid var(--card-border);
-      padding-top: 20px;
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Header -->
-  <header>
-    <div class="header-title">
-      <h1><i class="fa-solid fa-shield-heart"></i> RTDDI Public Health GIS Dashboard</h1>
-      <p>สถานการณ์ผู้เสียชีวิตจากอุบัติเหตุทางถนนในประเทศไทย (ไตรมาสที่ 1 ปี พ.ศ. 2569) | รายวิชาคอมพิวเตอร์ทางสาธารณสุข</p>
-    </div>
-    <div class="header-actions">
-      <input type="file" id="csvFileInput" accept=".csv" style="display:none;" />
-      <button class="btn" onclick="document.getElementById('csvFileInput').click()">
-        <i class="fa-solid fa-file-csv"></i> โหลดไฟล์ _2026.csv
-      </button>
-      <button class="btn" onclick="exportFilteredData()">
-        <i class="fa-solid fa-download"></i> ดาวน์โหลด CSV
-      </button>
-      <button class="btn" onclick="toggleTheme()" id="themeBtn">
-        <i class="fa-solid fa-moon"></i> โหมดสว่าง/มืด
-      </button>
-    </div>
-  </header>
-
-  <!-- Main Container -->
-  <div class="container">
-
-    <!-- Quality & Scope Disclaimer -->
-    <div class="alert-banner">
-      <i class="fa-solid fa-circle-exclamation fa-lg"></i>
-      <div>
-        <strong>หมายเหตุขอบเขตข้อมูลสาธารณสุข:</strong> 
-        ข้อมูลนี้รวบรวมเฉพาะช่วง <strong>1 มกราคม 2569 – 31 มีนาคม 2569 (รวม 90 วัน)</strong> เท่านั้น ไม่ใช่สถิติเต็มปี 
-        และไม่สามารถคำนวณอัตราต่อประชากรแสนคนได้เนื่องจากไม่มีฐานข้อมูลสำมะโนประชากรแนบมาด้วย
-      </div>
-    </div>
-
-    <!-- KPI Summary Grid -->
-    <div class="kpi-grid">
-      <div class="glass-card kpi-card">
-        <div class="kpi-icon"><i class="fa-solid fa-skull"></i></div>
-        <div class="kpi-info">
-          <h3>ผู้เสียชีวิตทั้งหมด</h3>
-          <div class="number" id="kpiTotal">0</div>
-        </div>
-      </div>
-      <div class="glass-card kpi-card">
-        <div class="kpi-icon"><i class="fa-solid fa-map-location-dot"></i></div>
-        <div class="kpi-info">
-          <h3>จังหวัดที่มีข้อมูล</h3>
-          <div class="number" id="kpiProvinces">0</div>
-        </div>
-      </div>
-      <div class="glass-card kpi-card">
-        <div class="kpi-icon"><i class="fa-solid fa-mars"></i></div>
-        <div class="kpi-info">
-          <h3>เพศชาย (%)</h3>
-          <div class="number" id="kpiMale">0%</div>
-        </div>
-      </div>
-      <div class="glass-card kpi-card">
-        <div class="kpi-icon"><i class="fa-solid fa-venus"></i></div>
-        <div class="kpi-info">
-          <h3>เพศหญิง (%)</h3>
-          <div class="number" id="kpiFemale">0%</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Timeline & Animation Slider -->
-    <div class="glass-card timeline-container">
-      <div class="timeline-header">
-        <div class="brand-font" style="font-weight: 600; font-size: 1rem;">
-          <i class="fa-solid fa-clock-rotate-left" style="color:var(--primary-orange);"></i> 
-          ตัวกรองตามเส้นเวลา (Timeline Filter): <span id="currentDateDisplay" style="color:var(--primary-orange);">ทุกช่วงเวลา</span>
-        </div>
-        <button class="btn btn-primary" id="playBtn" onclick="togglePlayTimeline()">
-          <i class="fa-solid fa-play"></i> เล่นจำลองเวลา
-        </button>
-      </div>
-      <div class="timeline-slider-wrap">
-        <span style="font-size: 0.8rem; color:var(--text-muted);">01 ม.ค. 2569</span>
-        <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="90" value="90" oninput="onTimelineChange(this.value)">
-        <span style="font-size: 0.8rem; color:var(--text-muted);">31 มี.ค. 2569</span>
-      </div>
-    </div>
-
-    <!-- Main Grid: Map + Comparison -->
-    <div class="main-grid">
-      <!-- GIS Map Card -->
-      <div class="glass-card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h2 style="font-size: 1.15rem;"><i class="fa-solid fa-map"></i> แผนที่แสดงการกระจายตัวผู้เสียชีวิต (Choropleth Map)</h2>
-          <span style="font-size: 0.8rem; color:var(--text-muted);">คลิกที่จังหวัดเพื่อดูรายละเอียด</span>
-        </div>
-        <div id="map"></div>
-        <div class="map-controls">
-          <button class="btn" onclick="resetMapView()"><i class="fa-solid fa-arrows-to-dot"></i> รีเซ็ตมุมมอง</button>
-        </div>
-      </div>
-
-      <!-- Compare & Detail Card -->
-      <div class="glass-card" style="display:flex; flex-direction:column; gap:16px;">
-        <h2 style="font-size: 1.15rem;"><i class="fa-solid fa-code-compare"></i> เปรียบเทียบข้อมูลระหว่าง 2 จังหวัด</h2>
-        <div class="compare-container">
-          <div class="compare-box">
-            <label style="font-size:0.85rem; color:var(--text-muted);">จังหวัดที่ 1</label>
-            <select id="selectProv1" onchange="updateComparison()"></select>
-            <div id="compareDetails1" class="compare-result">กำลังโหลด...</div>
-          </div>
-          <div class="compare-box">
-            <label style="font-size:0.85rem; color:var(--text-muted);">จังหวัดที่ 2</label>
-            <select id="selectProv2" onchange="updateComparison()"></select>
-            <div id="compareDetails2" class="compare-result">กำลังโหลด...</div>
-          </div>
-        </div>
-
-        <h2 style="font-size: 1.15rem; margin-top:10px;"><i class="fa-solid fa-circle-info"></i> รายละเอียดจังหวัดที่เลือกจากแผนที่</h2>
-        <div id="provinceCardDetail" style="padding:15px; border-radius:10px; background:rgba(0,0,0,0.2); flex:1;">
-          <em>คลิกที่จังหวัดบนแผนที่เพื่อดูข้อมูลทางระบาดวิทยา</em>
-        </div>
-      </div>
-    </div>
-
-    <!-- Charts Grid -->
-    <div class="charts-grid">
-      <!-- 10 อันดับจังหวัด -->
-      <div class="glass-card">
-        <h3 style="font-size: 1rem; margin-bottom: 12px;"><i class="fa-solid fa-chart-bar"></i> 10 จังหวัดที่มีผู้เสียชีวิตสะสมสูงสุด</h3>
-        <div class="chart-box">
-          <canvas id="topProvChart"></canvas>
-        </div>
-      </div>
-
-      <!-- สัดส่วนตามเพศ -->
-      <div class="glass-card">
-        <h3 style="font-size: 1rem; margin-bottom: 12px;"><i class="fa-solid fa-chart-pie"></i> สัดส่วนผู้เสียชีวิตตามเพศสภาพ</h3>
-        <div class="chart-box">
-          <canvas id="genderChart"></canvas>
-        </div>
-      </div>
-
-      <!-- กราฟช่วงอายุ -->
-      <div class="glass-card">
-        <h3 style="font-size: 1rem; margin-bottom: 12px;"><i class="fa-solid fa-users"></i> การกระจายตัวตามช่วงอายุ (ปิรามิดกลุ่มประชากร)</h3>
-        <div class="chart-box">
-          <canvas id="ageChart"></canvas>
-        </div>
-      </div>
-
-      <!-- แนวโน้มตามเวลา -->
-      <div class="glass-card">
-        <h3 style="font-size: 1rem; margin-bottom: 12px;"><i class="fa-solid fa-chart-line"></i> แนวโน้มผู้เสียชีวิตรายวัน (Daily Trend)</h3>
-        <div class="chart-box">
-          <canvas id="trendChart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <footer>
-      <p>แหล่งข้อมูลอ้างอิง: <a href="https://data.go.th/dataset/rtddi" target="_blank" style="color:var(--accent-blue); text-decoration:none;">ระบบข้อมูลอุบัติเหตุทางถนน (RTDDI) data.go.th</a></p>
-      <p style="margin-top:6px; font-size: 0.8rem;">รายวิชาคอมพิวเตอร์ทางสาธารณสุข | ผลงานสร้างสรรค์เพื่อการศึกษาด้าน Data Science & GIS</p>
-    </footer>
-
-  </div>
-
-  <script>
-    // --- Application State ---
-    let rawData = [];
-    let filteredData = [];
-    let map = null;
-    let geojsonLayer = null;
-    let thaiGeoJson = null;
-    let isPlaying = false;
-    let playInterval = null;
-
-    // Charts references
-    let topProvChartRef = null;
-    let genderChartRef = null;
-    let ageChartRef = null;
-    let trendChartRef = null;
-
-    // Initialize Map
+// 1. Initialize Map with Free OpenStreetMap (No API Key Required)
     function initMap() {
       map = L.map('map', {
         center: [13.736717, 100.523186],
@@ -527,8 +7,10 @@
         maxZoom: 10
       });
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; CartoDB & OpenStreetMap contributors'
+      // ใช้ OpenStreetMap มาตรฐาน ใช้งานได้ฟรีตลอดเวลา ไม่ติด API Key
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(map);
 
       addLegend();
@@ -538,7 +20,7 @@
       if (map) map.setView([13.736717, 100.523186], 6);
     }
 
-    // Color Scales
+    // 2. Color Scales
     function getColor(d) {
       return d > 120 ? '#800026' :
              d > 80  ? '#BD0026' :
@@ -547,7 +29,7 @@
              d > 15  ? '#FD8D3C' :
              d > 5   ? '#FEB24C' :
              d > 0   ? '#FED976' :
-                       '#e0e0e0';
+                       '#f0f0f0';
     }
 
     function addLegend() {
@@ -566,57 +48,73 @@
       legend.addTo(map);
     }
 
-    // Load GeoJSON for Thailand provinces
+    // 3. Load Thailand 77 Provinces GeoJSON (มีระบบ Fallback สำรองหากเซิร์ฟเวอร์ใดล่ม)
     async function loadThailandGeoJSON() {
-      try {
-        // High quality standard Thai GeoJSON
-        const res = await fetch('https://raw.githubusercontent.com/apisit/thailand.json/master/thailandwithgisinfo.json');
-        thaiGeoJson = await res.json();
-        renderMapLayers();
-      } catch (err) {
-        console.warn('ไม่สามารถโหลด GeoJSON ภายนอกได้โดยตรง:', err);
+      const geojsonSources = [
+        'https://raw.githubusercontent.com/chingchai/OpenGISData-Thailand/master/provinces.geojson',
+        'https://raw.githubusercontent.com/apisit/thailand.json/master/thailandWithName.json',
+        'https://raw.githubusercontent.com/cvibhagool/thailand-map/master/thailand-provinces.geojson'
+      ];
+
+      for (const url of geojsonSources) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            thaiGeoJson = await res.json();
+            console.log('โหลด GeoJSON สำเร็จจาก:', url);
+            renderMapLayers();
+            return;
+          }
+        } catch (e) {
+          console.warn('กำลังลองโหลดจากแหล่งสำรองถัดไป...');
+        }
       }
+    }
+
+    // ดึงชื่อจังหวัดจาก GeoJSON ให้ตรงกับชื่อในไฟล์ CSV ภาษาไทย
+    function getProvinceName(props) {
+      return (props.pro_th || props.name || props.NAME_1 || props.NL_NAME_1 || props.dname || '').replace(/^(จ\.|จังหวัด)/, '').trim();
     }
 
     function renderMapLayers() {
       if (!thaiGeoJson || !map) return;
       if (geojsonLayer) map.removeLayer(geojsonLayer);
 
-      // Aggregate deaths by province
+      // รวบรวมสถิติตามจังหวัดจากข้อมูลจริง
       const provCounts = {};
       filteredData.forEach(row => {
-        const p = (row.Dead_Prov || '').trim();
+        const p = (row.Dead_Prov || '').replace(/^(จ\.|จังหวัด)/, '').trim();
         if (p) provCounts[p] = (provCounts[p] || 0) + 1;
       });
 
       geojsonLayer = L.geoJson(thaiGeoJson, {
         style: function(feature) {
-          const name = feature.properties.name || feature.properties.NAME_1 || feature.properties.NL_NAME_1 || '';
+          const name = getProvinceName(feature.properties);
           const count = provCounts[name] || 0;
           return {
             fillColor: getColor(count),
             weight: 1.2,
             opacity: 1,
-            color: 'white',
+            color: '#ffffff',
             dashArray: '2',
             fillOpacity: 0.75
           };
         },
         onEachFeature: function(feature, layer) {
-          const name = feature.properties.name || feature.properties.NAME_1 || feature.properties.NL_NAME_1 || 'ไม่ระบุ';
+          const name = getProvinceName(feature.properties);
           const count = provCounts[name] || 0;
           
-          // Tooltip hover
-          layer.bindTooltip(`<strong>${name}</strong><br>ผู้เสียชีวิต: ${count} ราย`, {
+          // Tooltip เมื่อชี้เมาส์
+          layer.bindTooltip(`<strong>จังหวัด${name}</strong><br>ผู้เสียชีวิต: ${count.toLocaleString()} ราย`, {
             sticky: true,
             className: 'custom-tooltip'
           });
 
-          // Click event
+          // เหตุการณ์คลิกและ Hover
           layer.on({
             mouseover: function(e) {
               const l = e.target;
-              l.setStyle({ weight: 2.5, color: '#ff7a00', fillOpacity: 0.9 });
+              l.setStyle({ weight: 3, color: '#ff7a00', fillOpacity: 0.9 });
             },
             mouseout: function(e) {
               geojsonLayer.resetStyle(e.target);
@@ -628,297 +126,3 @@
         }
       }).addTo(map);
     }
-
-    function showProvinceDetail(provName, count) {
-      const pData = filteredData.filter(d => (d.Dead_Prov || '').trim() === provName);
-      const male = pData.filter(d => d.Sex === 'ชาย').length;
-      const female = pData.filter(d => d.Sex === 'หญิง').length;
-      
-      const vCounts = {};
-      pData.forEach(d => {
-        const v = d.Vehicle || 'ไม่ระบุ';
-        vCounts[v] = (vCounts[v] || 0) + 1;
-      });
-      const topVehicle = Object.entries(vCounts).sort((a,b) => b[1] - a[1])[0] || ['-', 0];
-
-      document.getElementById('provinceCardDetail').innerHTML = `
-        <h3 style="color:var(--primary-orange); margin-bottom:8px;">จังหวัด${provName}</h3>
-        <p><strong>ผู้เสียชีวิตสะสม:</strong> ${count} ราย</p>
-        <p><strong>จำแนกตามเพศ:</strong> ชาย ${male} ราย | หญิง ${female} ราย</p>
-        <p><strong>ยานพาหนะสูงสุด:</strong> ${topVehicle[0]} (${topVehicle[1]} ราย)</p>
-      `;
-    }
-
-    // Process & Animate KPIs
-    function animateValue(id, start, end, duration, suffix = '') {
-      const obj = document.getElementById(id);
-      let startTimestamp = null;
-      const step = (timestamp) => {
-        if (!startTimestamp) startTimestamp = timestamp;
-        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        const current = Math.floor(progress * (end - start) + start);
-        obj.innerHTML = current.toLocaleString() + suffix;
-        if (progress < 1) {
-          window.requestAnimationFrame(step);
-        }
-      };
-      window.requestAnimationFrame(step);
-    }
-
-    function updateKPIs() {
-      const total = filteredData.length;
-      const provSet = new Set(filteredData.map(d => (d.Dead_Prov || '').trim()).filter(Boolean));
-      const maleCount = filteredData.filter(d => d.Sex === 'ชาย').length;
-      const femaleCount = filteredData.filter(d => d.Sex === 'หญิง').length;
-      
-      animateValue('kpiTotal', 0, total, 600);
-      animateValue('kpiProvinces', 0, provSet.size, 600);
-      
-      const malePct = total > 0 ? Math.round((maleCount / total) * 100) : 0;
-      const femalePct = total > 0 ? Math.round((femaleCount / total) * 100) : 0;
-      
-      document.getElementById('kpiMale').innerText = `${malePct}%`;
-      document.getElementById('kpiFemale').innerText = `${femalePct}%`;
-    }
-
-    // Chart Generation
-    function initCharts() {
-      const ctxTop = document.getElementById('topProvChart').getContext('2d');
-      topProvChartRef = new Chart(ctxTop, {
-        type: 'bar',
-        data: { labels: [], datasets: [{ label: 'จำนวนผู้เสียชีวิต (ราย)', data: [], backgroundColor: '#ff7a00' }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-      });
-
-      const ctxGen = document.getElementById('genderChart').getContext('2d');
-      genderChartRef = new Chart(ctxGen, {
-        type: 'doughnut',
-        data: { labels: ['ชาย', 'หญิง', 'ไม่ทราบ'], datasets: [{ data: [], backgroundColor: ['#00a8ff', '#ff4757', '#9fb3c8'] }] },
-        options: { responsive: true, maintainAspectRatio: false }
-      });
-
-      const ctxAge = document.getElementById('ageChart').getContext('2d');
-      ageChartRef = new Chart(ctxAge, {
-        type: 'bar',
-        data: { labels: ['0-14 ปี', '15-24 ปี', '25-39 ปี', '40-59 ปี', '60 ปีขึ้นไป', 'ไม่ระบุ'], datasets: [{ label: 'จำนวน (ราย)', data: [], backgroundColor: '#3b82f6' }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-      });
-
-      const ctxTrend = document.getElementById('trendChart').getContext('2d');
-      trendChartRef = new Chart(ctxTrend, {
-        type: 'line',
-        data: { labels: [], datasets: [{ label: 'ผู้เสียชีวิตรายวัน', data: [], borderColor: '#ff7a00', tension: 0.2, fill: true, backgroundColor: 'rgba(255,122,0,0.1)' }] },
-        options: { responsive: true, maintainAspectRatio: false }
-      });
-    }
-
-    function updateCharts() {
-      // 1. Top Provinces
-      const provCounts = {};
-      filteredData.forEach(d => {
-        const p = (d.Dead_Prov || '').trim();
-        if (p) provCounts[p] = (provCounts[p] || 0) + 1;
-      });
-      const sortedProv = Object.entries(provCounts).sort((a,b) => b[1] - a[1]).slice(0, 10);
-      topProvChartRef.data.labels = sortedProv.map(x => x[0]);
-      topProvChartRef.data.datasets[0].data = sortedProv.map(x => x[1]);
-      topProvChartRef.update();
-
-      // 2. Gender
-      const male = filteredData.filter(d => d.Sex === 'ชาย').length;
-      const female = filteredData.filter(d => d.Sex === 'หญิง').length;
-      const unknown = filteredData.length - male - female;
-      genderChartRef.data.datasets[0].data = [male, female, unknown];
-      genderChartRef.update();
-
-      // 3. Age
-      let ageGroups = [0, 0, 0, 0, 0, 0];
-      filteredData.forEach(d => {
-        const a = parseFloat(d.Age);
-        if (isNaN(a)) ageGroups[5]++;
-        else if (a <= 14) ageGroups[0]++;
-        else if (a <= 24) ageGroups[1]++;
-        else if (a <= 39) ageGroups[2]++;
-        else if (a <= 59) ageGroups[3]++;
-        else ageGroups[4]++;
-      });
-      ageChartRef.data.datasets[0].data = ageGroups;
-      ageChartRef.update();
-
-      // 4. Trend
-      const dateCounts = {};
-      filteredData.forEach(d => {
-        if (d.DeadDate_EN) {
-          dateCounts[d.DeadDate_EN] = (dateCounts[d.DeadDate_EN] || 0) + 1;
-        }
-      });
-      const sortedDates = Object.keys(dateCounts).sort();
-      trendChartRef.data.labels = sortedDates;
-      trendChartRef.data.datasets[0].data = sortedDates.map(d => dateCounts[d]);
-      trendChartRef.update();
-    }
-
-    // Populate Province Selectors for Comparison
-    function populateProvinceSelectors() {
-      const provs = Array.from(new Set(rawData.map(d => (d.Dead_Prov || '').trim()).filter(Boolean))).sort();
-      const s1 = document.getElementById('selectProv1');
-      const s2 = document.getElementById('selectProv2');
-      s1.innerHTML = '';
-      s2.innerHTML = '';
-
-      provs.forEach((p, idx) => {
-        s1.add(new Option(p, p, false, idx === 0));
-        s2.add(new Option(p, p, false, idx === 1));
-      });
-      updateComparison();
-    }
-
-    function updateComparison() {
-      const p1 = document.getElementById('selectProv1').value;
-      const p2 = document.getElementById('selectProv2').value;
-
-      function getStats(pName) {
-        const list = filteredData.filter(d => (d.Dead_Prov || '').trim() === pName);
-        const male = list.filter(d => d.Sex === 'ชาย').length;
-        const female = list.filter(d => d.Sex === 'หญิง').length;
-        return { count: list.length, male, female };
-      }
-
-      const st1 = getStats(p1);
-      const st2 = getStats(p2);
-
-      document.getElementById('compareDetails1').innerHTML = `
-        <div style="font-weight:600; color:var(--primary-orange);">${p1}</div>
-        <div>ผู้เสียชีวิต: <strong>${st1.count}</strong> ราย</div>
-        <div>ชาย: ${st1.male} | หญิง: ${st1.female}</div>
-      `;
-      document.getElementById('compareDetails2').innerHTML = `
-        <div style="font-weight:600; color:var(--primary-orange);">${p2}</div>
-        <div>ผู้เสียชีวิต: <strong>${st2.count}</strong> ราย</div>
-        <div>ชาย: ${st2.male} | หญิง: ${st2.female}</div>
-      `;
-    }
-
-    // Timeline Slider Logic
-    function onTimelineChange(val) {
-      if (!rawData.length) return;
-      const allDates = Array.from(new Set(rawData.map(d => d.DeadDate_EN).filter(Boolean))).sort();
-      if (parseInt(val) >= allDates.length) {
-        filteredData = [...rawData];
-        document.getElementById('currentDateDisplay').innerText = 'ทุกช่วงเวลา (ม.ค. - มี.ค. 2569)';
-      } else {
-        const targetDate = allDates[parseInt(val)];
-        filteredData = rawData.filter(d => d.DeadDate_EN <= targetDate);
-        document.getElementById('currentDateDisplay').innerText = `สะสมถึงวันที่ ${targetDate}`;
-      }
-
-      updateKPIs();
-      renderMapLayers();
-      updateCharts();
-      updateComparison();
-    }
-
-    function togglePlayTimeline() {
-      const btn = document.getElementById('playBtn');
-      const slider = document.getElementById('timelineSlider');
-      if (isPlaying) {
-        clearInterval(playInterval);
-        isPlaying = false;
-        btn.innerHTML = '<i class="fa-solid fa-play"></i> เล่นจำลองเวลา';
-      } else {
-        isPlaying = true;
-        btn.innerHTML = '<i class="fa-solid fa-pause"></i> หยุดชั่วคราว';
-        playInterval = setInterval(() => {
-          let curr = parseInt(slider.value);
-          if (curr >= parseInt(slider.max)) {
-            curr = 0;
-          } else {
-            curr += 2;
-          }
-          slider.value = curr;
-          onTimelineChange(curr);
-        }, 300);
-      }
-    }
-
-    // Dark / Light Mode Toggle
-    function toggleTheme() {
-      document.body.classList.toggle('light-mode');
-      const isLight = document.body.classList.contains('light-mode');
-      document.getElementById('themeBtn').innerHTML = isLight 
-        ? '<i class="fa-solid fa-sun"></i> โหมดสว่าง' 
-        : '<i class="fa-solid fa-moon"></i> โหมดมืด';
-    }
-
-    // CSV Export
-    function exportFilteredData() {
-      if (!filteredData.length) return alert('ไม่มีข้อมูลสำหรับดาวน์โหลด');
-      const csv = Papa.unparse(filteredData);
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.setAttribute('download', 'filtered_traffic_deaths_2026.csv');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    // Auto-fetch local CSV or user upload
-    function processParsedData(data) {
-      // Filter out invalid rows
-      rawData = data.filter(d => d.ID && d.DeadDate_EN);
-      filteredData = [...rawData];
-
-      const allDates = Array.from(new Set(rawData.map(d => d.DeadDate_EN).filter(Boolean))).sort();
-      const slider = document.getElementById('timelineSlider');
-      slider.max = allDates.length;
-      slider.value = allDates.length;
-
-      updateKPIs();
-      populateProvinceSelectors();
-      updateCharts();
-      renderMapLayers();
-    }
-
-    // Listen to file upload
-    document.getElementById('csvFileInput').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (file) {
-        Papa.parse(file, {
-          header: true,
-          skipEmptyLines: true,
-          complete: function(results) {
-            processParsedData(results.data);
-          }
-        });
-      }
-    });
-
-    // Run on page load
-    window.onload = function() {
-      initMap();
-      initCharts();
-      loadThailandGeoJSON();
-
-      // Try fetching `_2026.csv` located in the same directory (GitHub Pages default)
-      fetch('_2026.csv')
-        .then(response => {
-          if (!response.ok) throw new Error('File not accessible directly');
-          return response.text();
-        })
-        .then(csvText => {
-          Papa.parse(csvText, {
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-              processParsedData(results.data);
-            }
-          });
-        })
-        .catch(() => {
-          console.log('พร้อมสำหรับการเลือกอัปโหลดไฟล์ _2026.csv ผ่านหน้าเว็บ');
-        });
-    };
-  </script>
-</body>
-</html>
